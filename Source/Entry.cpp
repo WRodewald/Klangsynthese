@@ -58,13 +58,17 @@ int main(int argc, char **argv)
 
 	SineGen gen;
 	
-	bool state = 1;
+
+	std::cout << "Starting Audio Callback" << std::endl;
+
+	bool state = true;
 	state &= audio.initStream(cfg);
 	state &= audio.startStream();
 	audio.setCallback(&gen);
 
 	if (state)
 	{
+		std::cout << "Audio Callback Running" << std::endl;
 		std::cin.sync();
 		std::cin.get();
 
@@ -72,6 +76,7 @@ int main(int argc, char **argv)
 	}
 	else
 	{
+		std::cout << "Faild to Start Audio Callback" << std::endl;
 		std::cin.sync();
 		std::cin.get();
 	}
