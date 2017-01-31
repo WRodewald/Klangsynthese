@@ -10,7 +10,7 @@ class RingBuffer
 public:
 	inline RingBuffer(unsigned int capacity);
 	inline RingBuffer();
-	inline RingBuffer(RingBuffer & other);
+	inline RingBuffer(const RingBuffer & other);
 	inline ~RingBuffer();
 
 
@@ -69,7 +69,7 @@ inline RingBuffer<T>::RingBuffer()
 }
 
 template<typename T>
-inline RingBuffer<T>::RingBuffer(RingBuffer & other) : RingBuffer(other._capacity)
+inline RingBuffer<T>::RingBuffer(const RingBuffer & other) : RingBuffer(other._capacity)
 {
 	unsigned int size = other.size();
 	for (int i = 0; i < size; i++)

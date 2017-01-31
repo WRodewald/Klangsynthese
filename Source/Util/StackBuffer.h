@@ -13,7 +13,7 @@ public:
 	inline ~StackBuffer();
 
 
-	inline StackBuffer(StackBuffer &other);
+	inline StackBuffer(const StackBuffer &other);
 
 
 	inline void		    reserve(unsigned int count);
@@ -71,7 +71,7 @@ inline StackBuffer<T>::~StackBuffer()
 }
 
 template<typename T>
-inline StackBuffer<T>::StackBuffer(StackBuffer & other) :StackBuffer(other._capacity)
+inline StackBuffer<T>::StackBuffer(const StackBuffer & other) :StackBuffer(other._capacity)
 {
 	for (int i = 0; i < other.size(); i++)
 	{

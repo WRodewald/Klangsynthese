@@ -22,5 +22,11 @@ SET(SourceFiles
 	Source/ConfigManager.cpp
 )
 
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+
 add_executable(Klangsynthese ${SourceFiles})
+
 target_link_libraries(Klangsynthese portaudio_static)
+
+set_property(TARGET Klangsynthese PROPERTY CXX_STANDARD 11)
+

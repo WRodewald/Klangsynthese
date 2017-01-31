@@ -3,6 +3,7 @@
 
 #include "portaudio.h"
 #include <vector>
+#include <string>
 #include "Util/RingBuffer.h"
 #include "Util/StackBuffer.h"
 
@@ -83,9 +84,9 @@ private:
 
 	
 	unsigned int bufferSize;
-	std::vector<StackBuffer<float>>		inputBuffer;
-	std::vector<StackBuffer<float>>		outputBuffer;
-	std::vector<RingBuffer<float>>		latencyBuffer; 
+	std::vector<StackBuffer<float> >	inputBuffer;
+	std::vector<StackBuffer<float> >	outputBuffer;
+	std::vector<RingBuffer<float> >		latencyBuffer; 
 
 	StreamData   streamData;
 
