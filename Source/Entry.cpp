@@ -39,9 +39,7 @@ int main(int argc, char **argv)
 		}
 		argIdx++;
 	}
-	if(configMode) std::cout << "CONFIG MODE!";
-	return 1;
-	
+
 	AudioIO audio;
 
 	AudioIO::CallbackConfig cfg;
@@ -52,7 +50,11 @@ int main(int argc, char **argv)
 	cfg.inDevice = AudioIO::NoDevice;
 	cfg.outDevice = AudioIO::DefaultDevice;
 
-	audio.getConfiguration();
+	if (configMode)
+	{
+		AudioIO::ConfigKeys keys =(AudioIO::ConfigKeys)( AudioIO::ConfigKeys::Conf_OutputDevice | AudioIO::ConfigKeys::Conf_FrameSize | AudioIO::ConfigKeys::Conf_SampleRate);
+		audio.getConfiguration(cfg, keys);
+	}
 
 	SineGen gen;
 	

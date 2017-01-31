@@ -353,38 +353,45 @@ bool AudioIO::closeStream()
 	return true;
 }
 
-AudioIO::CallbackConfig AudioIO::getConfiguration()
+void AudioIO::getConfiguration(AudioIO::CallbackConfig& cfg, ConfigKeys keys)
 {
-	CallbackConfig cfg;
-	if (!portAudioInitialized) return cfg;
+	if (!portAudioInitialized) return;
 	unsigned int numDevices = Pa_GetDeviceCount();
 		
-
-	std::cout << "Aviable Devices" << std::endl;
-	std::cout << std::endl;
-
-	std::cout << "\t" << "Device Name (API Name)" << std::endl;
-	std::cout << "\t" << "SampleRate @ Latency (I/O)" << std::endl;
-
-	std::cout << std::endl;
-
-	std::cout << "[" << -2 << "]" << "\t" << "No Device (Input Only)" << std::endl;
-	std::cout << "[" << -1 << "]" << "\t" << "Default Device" << std::endl;
-
-	for (int i = 0; i < numDevices; i++)
 	{
-		printDevice(i);
+
+		std::cout << "Aviable Devices" << std::endl;
+		std::cout << std::endl;
+
+		std::cout << "\t" << "Device Name (API Name)" << std::endl;
+		std::cout << "\t" << "SampleRate @ Latency (I/O)" << std::endl;
+
+		std::cout << std::endl;
+
+		std::cout << "[" << -2 << "]" << "\t" << "No Device (Input Only)" << std::endl;
+		std::cout << "[" << -1 << "]" << "\t" << "Default Device" << std::endl;
+
+		for (int i = 0; i < numDevices; i++)
+		{
+			printDevice(i);
+		}
 	}
 
-	cfg.inDevice  = queryNumber(-2, numDevices, "Input Device");
-	cfg.outDevice = queryNumber(-1, numDevices, "Output Device");
+	if(keys & ConfigKeys::Conf_InputDevice)  
+		cfg.inDevice  = queryNumber(-2, numDevices, "Input Device");
+
+	if (keys & ConfigKeys::Conf_OutputDevice)
+		cfg.outDevice = queryNumber(-1, numDevices, "Output Device");
+
 	cfg.inChannels = 0;
-	if (cfg.inDevice != NoDevice)
+	if ((cfg.inDevice != NoDevice) && (keys & ConfigKeys::Conf_InputChannels))
 	{
 		cfg.inChannels = queryNumber(1, 2, "Input Channels");
 	}
 
-	cfg.outChannels = queryNumber(1, 2, "Output Channels");
+	if (keys & ConfigKeys::Conf_OutputChannels) 
+		cfg.outChannels = queryNumber(1, 2, "Output Channels");
+
 	std::vector<int> validSampleRates;
 	validSampleRates.push_back(44100);
 	validSampleRates.push_back(48000);
@@ -392,13 +399,13 @@ AudioIO::CallbackConfig AudioIO::getConfiguration()
 	validSampleRates.push_back(92000);
 	validSampleRates.push_back(176400);
 	validSampleRates.push_back(192000);
-	cfg.sampleRate = queryNumber(validSampleRates , "Sample Rate");
-	cfg.frameSize = queryNumber(1, MaxFrameSize, "Frame Size");
+
+	if(keys & ConfigKeys::Conf_SampleRate)
+		cfg.sampleRate = queryNumber(validSampleRates , "Sample Rate");
+
+	if (keys & ConfigKeys::Conf_FrameSize)
+		cfg.frameSize = queryNumber(1, MaxFrameSize, "Frame Size");
 	
-
-
-	std::cin.sync();
-	std::cin.get();
 }
 
 AudioIO::CallbackData::CallbackData(unsigned int inChannels, unsigned int outChannels)

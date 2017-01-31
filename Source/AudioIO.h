@@ -21,6 +21,16 @@ public:
 		AudioIO * ioObject;
 	};
 
+	enum ConfigKeys
+	{
+		Conf_InputDevice		= 1,
+		Conf_InputChannels		= 2,
+		Conf_OutputDevice		= 4,
+		Conf_OutputChannels		= 8,
+		Conf_SampleRate			= 16,
+		Conf_FrameSize			= 32
+	};
+
 
 	struct CallbackConfig
 	{
@@ -54,7 +64,7 @@ public:
 	bool startStream();
 	bool closeStream();
 
-	CallbackConfig getConfiguration();
+	void getConfiguration(CallbackConfig &cfg, ConfigKeys keysToConfig);
 
 	void setCallback(AudioCallbackProvider* callbackProvider) { this->callbackProvider = callbackProvider;  };
 
