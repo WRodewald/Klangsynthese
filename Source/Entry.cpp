@@ -1,11 +1,15 @@
 #include "Entry.h"
+
 #define _USE_MATH_DEFINES 1
 #include <cmath>
-#include <iostream>
-#include <regex>
 #ifndef M_PI
 	#define M_PI 3.14159265358979323846
 #endif
+
+#include <iostream>
+#include <regex>
+#include <future>
+
 
 void SineGen::process(AudioIO::CallbackConfig &cfg, AudioIO::CallbackData &data)
 {
@@ -24,23 +28,35 @@ void SineGen::process(AudioIO::CallbackConfig &cfg, AudioIO::CallbackData &data)
 
 }
 
+void waitForStdIn()
+{
+	std::cin.sync();
+	std::cin.get();
+}
+
 
 int main(int argc, char **argv)
 {
 	bool configMode = false;
+	bool debugMode  = false;
 	int argIdx = 1;
 	while (argIdx < argc)
 	{
 		std::string argument = std::string(argv[argIdx]);
 		std::regex configRegex("[\\\\\\/-]?[cC](onfig)?"); // yes
+		std::regex debugRegex("[\\\\\\/-]?[cC](onfig)?"); // yes
 		if(std::regex_match(argument, configRegex))
 		{
 			configMode = true;
 		}
+		if (std::regex_match(argument, debugRegex))
+		{
+			debugMode = true;
+		}
 		argIdx++;
 	}
 
-	AudioIO audio;
+	AudioIO audio(debugMode);
 
 	AudioIO::CallbackConfig cfg;
 	cfg.inChannels = 0;
@@ -69,10 +85,29 @@ int main(int argc, char **argv)
 	if (state)
 	{
 		std::cout << "Audio Callback Running" << std::endl;
-		std::cin.sync();
-		std::cin.get();
+
+		auto blocker = std::async(waitForStdIn);
+
+		while (std::future_status::timeout == blocker.wait_for(std::chrono::seconds(1))) // wait_for waits for a second and repeats following loop
+		{
+			if(debugMode)
+			{
+				std::this_thread::sleep_for(std::chrono::seconds(1));
+				std::cout << "## Stream State ##" << std::endl;
+				auto state = audio.getDebugData();
+				std::cout << "CPU Load: \t\t" <<  (int) std::round(state->cpuLoad * 100) << "%" << std::endl;
+				std::cout << "Frame Size (Int/Ext): \t" << state->internFrameSize << "/" << state->externFrameSize << std::endl;
+				std::cout << "Frames Processed:\t" << state->processedSamples << std::endl;
+				std::cout << std::endl;
+			}
+		}
 
 		audio.closeStream();
+
+		std::cout << "Audio Callback Stopped" << std::endl;
+
+		std::cin.get();
+		std::cin.sync();
 	}
 	else
 	{

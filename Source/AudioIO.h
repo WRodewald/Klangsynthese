@@ -7,7 +7,6 @@
 #include "Util/RingBuffer.h"
 #include "Util/StackBuffer.h"
 
-
 class AudioCallbackProvider;
 
 class AudioIO
@@ -43,6 +42,15 @@ public:
 		int			 outDevice;
 	};
 
+	struct DebugData
+	{
+		bool  activeStream; // is stream active at all?
+		float cpuLoad;
+		float processedSamples;
+		float externFrameSize;
+		float internFrameSize;
+	};
+
 	static const int DefaultDevice = -1;
 	static const int NoDevice = -2;
 
@@ -57,7 +65,7 @@ public:
 	};
 
 public:
-	AudioIO();
+	AudioIO(bool debugMode);
 	~AudioIO();
 
 	bool initStream(CallbackConfig cfg);
@@ -66,7 +74,9 @@ public:
 
 	void getConfiguration(CallbackConfig &cfg, ConfigKeys keysToConfig);
 
-	void setCallback(AudioCallbackProvider* callbackProvider) { this->callbackProvider = callbackProvider;  };
+	void		setCallback(AudioCallbackProvider* callbackProvider) { this->callbackProvider = callbackProvider;  };
+
+	const DebugData	* getDebugData();
 
 private:
 	static int portAudioCallback(const void *					 inputBuffer,
@@ -87,7 +97,6 @@ private:
 	int queryNumber(int min, int max, std::string label);
 	int queryNumber(std::vector<int> aviable, std::string label);
 
-	int   askForDevice(std::string query);
 	void  printDevice(int deviceID);
 private:
 	PaStream *stream;
@@ -104,7 +113,18 @@ private:
 	CallbackConfig		  * cfg;
 	AudioCallbackProvider * callbackProvider;
 
+	// debug information
+	bool debugMode;
 	
+	DebugData debugData;
+	
+	static const float debugUpdateIntervall;
+	unsigned int	   samplesPerDebugUpdate;
+	unsigned int	   debugUpdateTimer;
+
+	
+	// static variables
+
 	static bool			portAudioInitialized;
 	static unsigned int audioIOInstances;
 

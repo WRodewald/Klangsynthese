@@ -10,9 +10,19 @@
 #include "portaudio.h"
 #include "AudioIO.h"
 
+const float AudioIO::debugUpdateIntervall = 10; /// updates per second
 
 bool AudioIO::portAudioInitialized = false;
 unsigned int AudioIO::audioIOInstances = 0;
+
+const AudioIO::DebugData * AudioIO::getDebugData()
+{
+	if (debugMode)
+	{
+		return &debugData;
+	}
+	return NULL;
+}
 
 int AudioIO::portAudioCallback(	const void *					inputBuffer,
 								void *							outputBuffer,
@@ -74,6 +84,19 @@ void AudioIO::audioCallback(const float * in, float * out, unsigned long framesP
 			*(outSamples++) = latencyBuffer[ch].pop_front();;
 		}
 		samples++;
+	}
+
+
+	debugUpdateTimer += framesPerBuffer;
+	if (debugUpdateTimer >= samplesPerDebugUpdate)
+	{
+		debugUpdateTimer -= samplesPerDebugUpdate;
+
+		debugData.cpuLoad = Pa_GetStreamCpuLoad(stream);
+		debugData.processedSamples += framesPerBuffer;
+		debugData.externFrameSize   = framesPerBuffer;
+		debugData.internFrameSize   = cfg->frameSize;
+
 	}
 }
 
@@ -158,11 +181,6 @@ int AudioIO::queryNumber(std::vector<int> aviable, std::string label)
 	return number;
 }
 
-int AudioIO::askForDevice(std::string query)
-{
-	return 0;
-}
-
 void AudioIO::printDevice(int deviceID)
 {
 
@@ -195,16 +213,22 @@ void AudioIO::printDevice(int deviceID)
 	std::cout << std::endl;
 }
 
-
-AudioIO::AudioIO():
+AudioIO::AudioIO(bool debugMode):
 	stream(NULL),
 	cfg(NULL),
 	data(NULL),
-	callbackProvider(NULL)
+	callbackProvider(NULL),
+	debugMode(debugMode)
 	
 {
 	streamData.ioObject = this; // used as callbac pointer
 	audioIOInstances++;
+
+	debugData.activeStream = false;
+	debugData.cpuLoad = 0;
+	debugData.internFrameSize = 0;
+	debugData.externFrameSize = 0;
+	debugData.processedSamples = 0;
 
 	if (!portAudioInitialized)
 	{
@@ -320,15 +344,26 @@ bool AudioIO::initStream(CallbackConfig cfg)
 	this->cfg  = new CallbackConfig;
 	*this->cfg = cfg;
 
+	this->debugUpdateTimer = 0;
+	this->samplesPerDebugUpdate = cfg.sampleRate / debugUpdateIntervall;
+
 	return true;
 }
 
 bool AudioIO::startStream()
 {
 	if (stream == NULL) return false;
-
+		
 	PaError err = Pa_StartStream(stream); 
 	if (!evaluatePAError(err)) return false;
+
+
+	debugData.activeStream = true;
+	debugData.cpuLoad = 0;
+	debugData.internFrameSize = 0;
+	debugData.externFrameSize = 0;
+	debugData.processedSamples = 0;
+
 	return true;
 }
 
@@ -349,6 +384,13 @@ bool AudioIO::closeStream()
 
 	delete cfg;
 	cfg = NULL;
+
+
+	debugData.activeStream = false;
+	debugData.cpuLoad = 0;
+	debugData.internFrameSize = 0;
+	debugData.externFrameSize = 0;
+	debugData.processedSamples = 0;
 
 	return true;
 }
