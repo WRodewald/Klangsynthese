@@ -1,6 +1,7 @@
 #pragma once
 
 #include "AudioIO.h"
+#include "ConfigManager.h"
 
 class SineGen : public AudioCallbackProvider
 {

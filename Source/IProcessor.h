@@ -10,7 +10,6 @@
 class IProcessor
 {
 public:
-	virtual void processAudio(
 
 
 
