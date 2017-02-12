@@ -1,33 +1,12 @@
-#include "Entry.h"
-
-
-#define _USE_MATH_DEFINES 1
-#include <cmath>
-#ifndef M_PI
-	#define M_PI 3.14159265358979323846
-#endif
+#include "AudioIO.h"
+#include "ConfigManager.h"
+#include "CQTAdditiveTable.h"
+#include "CQTTablePlayer.h"
 
 #include <iostream>
+#include <fstream>
 #include <regex>
 #include <future>
-
-
-void SineGen::process(AudioIO::CallbackConfig &cfg, AudioIO::CallbackData &data)
-{
-	float pi = 400. / cfg.sampleRate;
-
-	for (int i = 0; i < cfg.frameSize; i++)
-	{
-		phase += pi;
-		if (phase >= 1) phase = phase - 1;
-		float val1 = std::sin(2 * M_PI * phase);
-		float val2 = std::sin(2 * M_PI * phase);
-
-		data.write[0][i] = 0.1 * val1;
-		if (cfg.outChannels > 1) data.write[1][i] = 0.1 *  val2;
-	}
-
-}
 
 // function blocks process by waiting for enter key
 void waitForStdIn()
@@ -39,10 +18,10 @@ void waitForStdIn()
 
 int main(int argc, char **argv)
 {
-
+	
 	bool configMode = false;
 	bool debugMode  = false;
-
+	std::string fileName;
 
 
 	// #################### read arguments ####################
@@ -56,16 +35,32 @@ int main(int argc, char **argv)
 		{
 			configMode = true;
 		}
-		if (std::regex_match(argument, debugRegex))
+		else if (std::regex_match(argument, debugRegex))
 		{
 			debugMode = true;
+		}
+		else 
+		{
+			if (fileName.size() != 0) // fileName already set
+			{
+				std::cout << "Unexpected Argument" << std::endl;
+				return 0;
+			}
+			fileName = argument;
+			std::ifstream fileStream(fileName.c_str());
+			if (!fileStream.good())
+			{
+				std::cout << "File could not be opened" << std::endl;
+				return 0;
+			}
 		}
 		argIdx++;
 	}
 
 
-
 	// #################### config stuff ####################
+
+	std::cout << "Reading Config.xml" << std::endl;
 
 	// load config manager, read config.xml if existing
 	ConfigManager config("config.xml");	
@@ -112,16 +107,32 @@ int main(int argc, char **argv)
 	config.writeChanges(); 
 	
 
+	// #################### create CQG table ####################
+	
+	std::cout << "Import CQT Table" << std::endl;
 
+	CQTAdditiveTable * table = CQTAdditiveTable::createTableFromFile(fileName);
+
+	if (table == NULL)
+	{
+		std::cout << "Could not import CQT Table" << std::endl;
+		std::cin.sync();
+		std::cin.get();
+		return 0;
+	}
+
+	CQTTablePlayer     player;
+	player.setTable(table);
+	
 	// #################### start stream ####################
-	SineGen gen;
+
 
 	std::cout << "Starting Audio Callback" << std::endl;
 
 	bool state = true;
 	state &= audio.initStream(cfg);
 	state &= audio.startStream();
-	audio.setCallback(&gen);
+	audio.setCallback(&player);
 
 	if (!state)
 	{
