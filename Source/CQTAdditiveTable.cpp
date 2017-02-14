@@ -107,7 +107,7 @@ CQTAdditiveTable * CQTAdditiveTable::createTableFromFile(std::string filename)
 
 				// prepare 
 				table->frequencyTable.push_back(currentFrequency);
-				table->amplitudeTable.push_back(std::vector<double>());
+				table->amplitudeTable.push_back(std::vector<float>());
 				table->amplitudeTable.back().reserve(listSize);
 
 				// import csv list into std vector, 
@@ -249,7 +249,7 @@ bool CQTAdditiveTable::isValid()
 	return false;
 }
 
-bool CQTAdditiveTable::readValueList(const std::string & str, std::vector<double>& container)
+bool CQTAdditiveTable::readValueList(const std::string & str, std::vector<float>& container)
 {
 	if (str.size())
 	{

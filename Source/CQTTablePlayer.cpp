@@ -1,16 +1,25 @@
 #include "CQTTablePlayer.h"
 #include <iostream>
 #include <fstream>
-CQTTablePlayer::CQTTablePlayer()
+CQTTablePlayer::CQTTablePlayer(unsigned int frameSize, float freqBinThreshold)
 	:
 	table(NULL),
 	sampleRate(44100),
-	readPos(-128),
+	readPos(0),
 	readInc(0),
 	tableLength(0),
-	tableEndReached(false)
+	tableEndReached(false),
+	freqBinThreshold(freqBinThreshold)
 {
 	debugFile.open("output.txt");
+
+	readPosInt  = new int[frameSize];
+	readPosFrac = new float[frameSize];
+	for (int i = 0; i < frameSize; i++)
+	{
+		readPosInt[i]  = 0;
+		readPosFrac[i] = 0;
+	}
 }
 
 void CQTTablePlayer::process(AudioIO::CallbackConfig & cfg, AudioIO::CallbackData & data)
@@ -19,43 +28,42 @@ void CQTTablePlayer::process(AudioIO::CallbackConfig & cfg, AudioIO::CallbackDat
 	// update stuff if sample rate changed
 	if (cfg.sampleRate != sampleRate) prepare(cfg.sampleRate);
 
-	// return if we don't have a table
-	if (!table) return;
-
-	// following code might just get the price for least efficient additive synth there ever was
+	// prepare write channel, 
 	for (int i = 0; i < cfg.frameSize; i++)
 	{
-		if (!tableEndReached)
+		data.write[0][i] = 0;
+		readPos += readInc;
+		readPosInt[i] = readPos;
+		readPosFrac[i] = readPos - readPosInt[i];
+	}
+
+	// return if we don't have a table
+	if (!table) return;
+	
+
+	// following bracket calculates for the first sine, updating the read positions for all the other sines (as they are the same
+	tableEndReached = (readPos >= tableLength);
+	if (tableEndReached) readPos = tableLength; 
+	
+	// process sines
+	if (!tableEndReached)
+	{
+		float *write = data.write[0];
+		for (int f = 0; f < generators.size(); f++)
 		{
-			data.write[0][i] = 0;
+			if (!freqBinMask[f]) continue; // skip bin if mased out
 
-			// increment read pos, calculate integer part and fractional part 
-			readPos += readInc;
-			int   readInt = readPos;
-			float readFrac = readPos - readInt;
-			if (readInt + 1 >= tableLength)
-			{
-				tableEndReached = true;
-				continue;
-			}
+			std::vector<float> *fTableAmplitudeVector = &table->amplitudeTable[f]; // create a reference to the amplitude table to lower access overhead
+			SineGen * generator = &generators[f];
 
-			// skip sample if readPos not > 0 yet
-			if (readPos < 0) continue;
-			
-			//for (int f = 48; f < 49; f++)
-			for (int f = 0; f < generators.size(); f++)
+			for (int i = 0; i < cfg.frameSize; i++)
 			{
-				double amplitude = (1.f - readFrac) * table->amplitudeTable[f][readInt] + (readFrac)* table->amplitudeTable[f][readInt + 1];
-				float sine		 = generators[f].tick();
-					
-				data.write[0][i] += sine * amplitude;
+				float amplitude = (1.f - readPosFrac[i]) * (*fTableAmplitudeVector)[readPosInt[i]] + (readPosFrac[i]) * (*fTableAmplitudeVector)[readPosInt[i] + 1];
+				float sine = generator->tick();
+
+				write[i] += sine * amplitude;
 			}
 		}
-		else
-		{
-			data.write[0][i] = 0;
-		}
-		
 	}
 
 	// copy first channel over to second channel (or any other if available)
@@ -73,20 +81,47 @@ void CQTTablePlayer::setTable(CQTAdditiveTable * table)
 	this->table = table;
 
 	generators.clear();
-	frequencyMask.clear();
+	freqBinMask.clear();
 
 	if (table)
 	{
 		unsigned int numFrequencies = table->frequencyTable.size();
 		for (int f = 0; f < numFrequencies; f++)
 		{
-			frequencyMask.push_back(true);
+			freqBinMask.push_back(true);
 			generators.push_back(SineGen());
 		}
 
 		tableEndReached = false;
 		tableLength = table->amplitudeTable[0].size();
+
+		if (freqBinThreshold > 0)
+		{
+			for (int f = 0; f < table->amplitudeTable.size(); f++)
+			{
+				float max = 0;
+				for (int i = 0; i < table->amplitudeTable[f].size(); i++)
+				{
+					if (table->amplitudeTable[f][i] > max) max = table->amplitudeTable[f][i];
+				}
+				if (max < freqBinThreshold) 
+				{
+					freqBinMask[f] = false;
+				}
+			}
+		}
 	}
+	std::cout << std::endl;
+	std::cout << "CQT Table Player: Table prepared" << std::endl;
+	if (freqBinThreshold)
+	{
+		int activeBinCount = 0;
+		for (int f = 0; f < freqBinMask.size(); f++) activeBinCount += freqBinMask[f];
+		std::cout << "Threshold set to: " << freqBinThreshold << " leaving " <<  activeBinCount << "/" << freqBinMask.size()  <<" bins active." << std::endl;
+
+	}
+
+	std::cout << std::endl;
 	
 	prepare(sampleRate);
 }

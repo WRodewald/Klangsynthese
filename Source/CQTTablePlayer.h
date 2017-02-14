@@ -12,7 +12,7 @@
 class CQTTablePlayer : public AudioCallbackProvider
 {
 public:
-	CQTTablePlayer();
+	CQTTablePlayer(unsigned int frameSize, float freqBinThreshold = 0);
 
 	virtual void process(AudioIO::CallbackConfig & cfg, AudioIO::CallbackData & data) override;
 
@@ -28,11 +28,8 @@ public:
 
 		inline void	 setFrequency(double normalizedFrequency);
 		inline float tick();
-		inline float tickWithFactor(double frequencyFactor);
 
 	private:
-		//double phase;
-		//double phaseInc;
 
 		std::complex<double>  phase;
 		std::complex<double>  phaseInc;
@@ -47,7 +44,9 @@ private:
 	int   tableLength;
 	bool  tableEndReached;
 
-	std::vector<bool>	 frequencyMask; 
+	float				 freqBinThreshold; // threshold value over which frequency bins are processed
+	std::vector<bool>	 freqBinMask;	   // mask specifies which frequency bins are being processed
+
 	std::vector<SineGen> generators;
 
 	SineGen				 masterGen;
@@ -55,6 +54,12 @@ private:
 	float				sampleRate;
 
 	std::ofstream		debugFile;
+
+	// fast access buffers for read positions
+	int  *				readPosInt;
+	float *				readPosFrac;
+
+
 
 };
 
@@ -67,22 +72,12 @@ inline CQTTablePlayer::SineGen::SineGen():
 inline void CQTTablePlayer::SineGen::setFrequency(double normalizedFrequency)
 {
 	this->phaseInc = std::polar<double>(1.,normalizedFrequency * 2. * M_PI);
-	//this->phaseInc = normalizedFrequency;
 }
 
 inline float CQTTablePlayer::SineGen::tick()
 {
-	//phase += phaseInc;
-	//phase = phase - (phase >= 1); // phase wrap works for frequencies < nyquist
-
 	phase *= phaseInc;
-
 	return phase.imag();
 }
 
-inline float CQTTablePlayer::SineGen::tickWithFactor(double frequencyFactor)
-{
-	//return std::sin(frequencyFactor * phase * 2. * M_PI);
 
-
-}

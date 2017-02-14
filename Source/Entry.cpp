@@ -21,6 +21,7 @@ int main(int argc, char **argv)
 	
 	bool configMode = false;
 	bool debugMode  = false;
+	float cqtBinThreshold = 0;
 	std::string fileName;
 
 
@@ -30,7 +31,8 @@ int main(int argc, char **argv)
 	{
 		std::string argument = std::string(argv[argIdx]);
 		std::regex configRegex("[\\\\\\/-]?[cC](onfig)?"); // yes
-		std::regex debugRegex( "[\\\\\\/-]?[dD](ebug)?"); 
+		std::regex debugRegex( "[\\\\\\/-]?[dD](ebug)?");
+		std::regex thresRegex("[\\\\\\/-]?[tT](hreshold)?");
 		if(std::regex_match(argument, configRegex))
 		{
 			configMode = true;
@@ -38,6 +40,27 @@ int main(int argc, char **argv)
 		else if (std::regex_match(argument, debugRegex))
 		{
 			debugMode = true;
+		}
+		else if (std::regex_match(argument, thresRegex))
+		{
+			argIdx++;
+			if (argIdx >= argc)
+			{
+				std::cout << "Unexpected Argument (Threshold)" << std::endl;
+				return 0;
+			}
+			std::string thresholdString = std::string(argv[argIdx]);
+
+			try 
+			{
+				cqtBinThreshold = std::stof(thresholdString);
+			}
+			catch (const std::exception &e)
+			{
+				std::cout << "Unexpected Argument (Threshold)" << std::endl;
+				return 0;
+			}
+
 		}
 		else 
 		{
@@ -121,7 +144,7 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
-	CQTTablePlayer     player;
+	CQTTablePlayer     player(cfg.frameSize, cqtBinThreshold);
 	player.setTable(table);
 	
 	// #################### start stream ####################

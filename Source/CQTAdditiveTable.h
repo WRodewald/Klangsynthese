@@ -49,7 +49,7 @@ private:
 	static bool			 convertString(const std::string &str, int   &val);
 
 	// function tries to read a CSV line from 'str', writes the content in container
-	static bool			readValueList(const std::string &str, std::vector<double> &container);
+	static bool			readValueList(const std::string &str, std::vector<float> &container);
 	static int			estimateValueListSize(const std::string &str);
 
 	bool isValid();
@@ -59,7 +59,7 @@ private:
 	// #################### MEMBER ####################
 
 	std::vector<float>				frequencyTable; // list of frequencies
-	std::vector<std::vector<double>> amplitudeTable; // list of amplitudes assigned (1. dim) to frequencyTable;
+	std::vector<std::vector<float>> amplitudeTable; // list of amplitudes assigned (1. dim) to frequencyTable;
 
 	bool  initialized;
 	float sampleRate;
