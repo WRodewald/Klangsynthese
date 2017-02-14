@@ -7,6 +7,8 @@
 	#define M_PI 3.14159265358979323846
 #endif
 
+#include <complex>
+
 class CQTTablePlayer : public AudioCallbackProvider
 {
 public:
@@ -29,8 +31,11 @@ public:
 		inline float tickWithFactor(double frequencyFactor);
 
 	private:
-		double phase;
-		double phaseInc;
+		//double phase;
+		//double phaseInc;
+
+		std::complex<double>  phase;
+		std::complex<double>  phaseInc;
 	};
 
 
@@ -54,24 +59,30 @@ private:
 };
 
 inline CQTTablePlayer::SineGen::SineGen():
-	phase(0),
-	phaseInc(0)
+	phase(std::complex<double>(1,0)),
+	phaseInc(std::complex<double>(0, 0))
 {
 }
 
 inline void CQTTablePlayer::SineGen::setFrequency(double normalizedFrequency)
 {
-	this->phaseInc = normalizedFrequency;
+	this->phaseInc = std::polar<double>(1.,normalizedFrequency * 2. * M_PI);
+	//this->phaseInc = normalizedFrequency;
 }
 
 inline float CQTTablePlayer::SineGen::tick()
 {
-	phase += phaseInc;
+	//phase += phaseInc;
 	//phase = phase - (phase >= 1); // phase wrap works for frequencies < nyquist
-	return std::sin(phase * 2. * M_PI);
+
+	phase *= phaseInc;
+
+	return phase.imag();
 }
 
 inline float CQTTablePlayer::SineGen::tickWithFactor(double frequencyFactor)
 {
-	return std::sin(frequencyFactor * phase * 2. * M_PI);
+	//return std::sin(frequencyFactor * phase * 2. * M_PI);
+
+
 }

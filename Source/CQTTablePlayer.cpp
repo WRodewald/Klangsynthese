@@ -29,6 +29,7 @@ void CQTTablePlayer::process(AudioIO::CallbackConfig & cfg, AudioIO::CallbackDat
 		{
 			data.write[0][i] = 0;
 
+			// increment read pos, calculate integer part and fractional part 
 			readPos += readInc;
 			int   readInt = readPos;
 			float readFrac = readPos - readInt;
@@ -37,20 +38,18 @@ void CQTTablePlayer::process(AudioIO::CallbackConfig & cfg, AudioIO::CallbackDat
 				tableEndReached = true;
 				continue;
 			}
-			if (readPos < 0)
-			{
-				continue;
-			}
 
-			int selectedFreq = 48 + table->binsPerSemitone * 12;
+			// skip sample if readPos not > 0 yet
+			if (readPos < 0) continue;
+			
+			//for (int f = 48; f < 49; f++)
 			for (int f = 0; f < generators.size(); f++)
 			{
 				double amplitude = (1.f - readFrac) * table->amplitudeTable[f][readInt] + (readFrac)* table->amplitudeTable[f][readInt + 1];
-				float sine		= masterGen.tickWithFactor(table->frequencyTable[f] / table->frequencyTable[0]);
+				float sine		 = generators[f].tick();
 					
 				data.write[0][i] += sine * amplitude;
 			}
-			masterGen.tick();
 		}
 		else
 		{
@@ -87,21 +86,8 @@ void CQTTablePlayer::setTable(CQTAdditiveTable * table)
 
 		tableEndReached = false;
 		tableLength = table->amplitudeTable[0].size();
-
-
-
-		for (int f = 0; f < table->amplitudeTable.size(); f++)
-		{
-			for (int i = 0; i < table->amplitudeTable[f].size(); i++)
-			{
-				debugFile << table->amplitudeTable[f][i] << ", ";
-			}
-			debugFile << std::endl;
-		}
 	}
 	
-
-
 	prepare(sampleRate);
 }
 
