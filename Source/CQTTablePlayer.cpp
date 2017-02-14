@@ -1,6 +1,7 @@
 #include "CQTTablePlayer.h"
 #include <iostream>
 #include <fstream>
+#include <cstring>
 CQTTablePlayer::CQTTablePlayer(unsigned int frameSize, float freqBinThreshold)
 	:
 	table(NULL),
@@ -80,7 +81,8 @@ void CQTTablePlayer::process(AudioIO::CallbackConfig & cfg, AudioIO::CallbackDat
 	// copy first channel over to second channel (or any other if available)
 	for (int c = 1; c < cfg.outChannels; c++)
 	{
-		memcpy((void*)data.write[c], (void*)data.write[0], cfg.frameSize * sizeof(float));
+		std::memcpy((void*)data.write[c], (void*)data.write[0], 
+cfg.frameSize * sizeof(float));
 	}
 
 	
