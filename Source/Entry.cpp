@@ -1,4 +1,5 @@
 #include "AudioIO.h"
+#include "MidiIO.h"
 #include "ConfigManager.h"
 #include "CQTAdditiveTable.h"
 #include "CQTTablePlayer.h"
@@ -81,12 +82,16 @@ int main(int argc, char **argv)
 	}
 
 
-	// #################### config stuff ####################
 
-	std::cout << "Reading Config.xml" << std::endl;
+	// #################### MIDI IO ####################
 
-	// load config manager, read config.xml if existing
-	ConfigManager config("config.xml");	
+	MidiCaster midiCaster;
+
+	int midiInputPort = -1; // no input per default
+
+
+
+	// #################### Audio IO ####################
 
 	// create audio context, start in debug mode if debugMode==true
 	AudioIO audio(debugMode);
@@ -99,16 +104,34 @@ int main(int argc, char **argv)
 	cfg.sampleRate = 44100;
 	cfg.inDevice = AudioIO::NoDevice;
 	cfg.outDevice = AudioIO::DefaultDevice;
-	
+
+
+
+	// #################### config stuff ####################
+
+	std::cout << "Reading Config.xml" << std::endl;
+
+	// load config manager, read config.xml if existing
+	ConfigManager config("config.xml");	
+		
 	// if config is true update current variables with getConfiguration dialog
 	if (configMode)
 	{
+
+		std::cout << std::endl << "Audio Configuration" << std::endl;
+
 		AudioIO::ConfigKeys keys =(AudioIO::ConfigKeys)( AudioIO::ConfigKeys::Conf_OutputDevice | AudioIO::ConfigKeys::Conf_FrameSize | AudioIO::ConfigKeys::Conf_SampleRate);
 		audio.getConfiguration(cfg, keys);
 
 		config.setValue(ConfigManager::ID("Audio", "SampleRate"),	std::to_string(cfg.sampleRate));
 		config.setValue(ConfigManager::ID("Audio", "FrameSize"),	std::to_string(cfg.frameSize));
 		config.setValue(ConfigManager::ID("Audio", "OutputDevice"), std::to_string(cfg.outDevice));
+		
+		std::cout << std::endl << "MIDI Configuration" << std::endl;
+
+		midiCaster.getConfiguration(midiInputPort);
+
+		config.setValue(ConfigManager::ID("MIDI", "Input Port"), std::to_string(midiInputPort));
 	}
 	
 	// get audio configuration from config.xml
@@ -123,12 +146,18 @@ int main(int argc, char **argv)
 	}
 	if (config.getValue(ConfigManager::ID("Audio", "OutputDevice"), cfgValue))
 	{
-		cfg.outDevice = std::atof(cfgValue.c_str());
+		cfg.outDevice = std::atoi(cfgValue.c_str());
+	}
+	if (config.getValue(ConfigManager::ID("MIDI", "Input Port"), cfgValue))
+	{
+
+		midiInputPort = std::atoi(cfgValue.c_str());
 	}
 	
 	// store changes to configuration
 	config.writeChanges(); 
 	
+
 
 	// #################### create CQG table ####################
 	
@@ -147,6 +176,12 @@ int main(int argc, char **argv)
 	CQTTablePlayer     player(cfg.frameSize, cqtBinThreshold);
 	player.setTable(table);
 	
+
+	// #################### MIDI Part 2 ####################
+
+	midiCaster.addListener(&player);
+	midiCaster.open(midiInputPort);
+
 	// #################### start stream ####################
 
 

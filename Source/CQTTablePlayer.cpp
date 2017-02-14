@@ -9,10 +9,9 @@ CQTTablePlayer::CQTTablePlayer(unsigned int frameSize, float freqBinThreshold)
 	readInc(0),
 	tableLength(0),
 	tableEndReached(false),
-	freqBinThreshold(freqBinThreshold)
+	freqBinThreshold(freqBinThreshold),
+	resetOnNextProcess(false)
 {
-	debugFile.open("output.txt");
-
 	readPosInt  = new int[frameSize];
 	readPosFrac = new float[frameSize];
 	for (int i = 0; i < frameSize; i++)
@@ -40,6 +39,13 @@ void CQTTablePlayer::process(AudioIO::CallbackConfig & cfg, AudioIO::CallbackDat
 	// return if we don't have a table
 	if (!table) return;
 	
+	if (resetOnNextProcess)
+	{
+		resetOnNextProcess = false;
+		tableEndReached = false;
+		readPos = 0;
+		masterAmp.setState(0);
+	}
 
 	// following bracket calculates for the first sine, updating the read positions for all the other sines (as they are the same
 	tableEndReached = (readPos >= tableLength);
@@ -64,6 +70,11 @@ void CQTTablePlayer::process(AudioIO::CallbackConfig & cfg, AudioIO::CallbackDat
 				write[i] += sine * amplitude;
 			}
 		}
+	}
+
+	for (int i = 0; i < cfg.frameSize; i++)
+	{
+		data.write[0][i] *= masterAmp.tick(1);
 	}
 
 	// copy first channel over to second channel (or any other if available)
@@ -128,6 +139,9 @@ void CQTTablePlayer::setTable(CQTAdditiveTable * table)
 
 void CQTTablePlayer::prepare(float sampleRate)
 {
+	masterAmp.setCutoff(10.f / sampleRate);
+	masterAmp.setState(0);
+	
 	if (!table) return;
 
 	this->sampleRate = sampleRate;
@@ -142,10 +156,24 @@ void CQTTablePlayer::prepare(float sampleRate)
 		{
 			generators[f].setFrequency(table->frequencyTable[f] * iSampleRate);
 		}
-
-		masterGen.setFrequency(table->frequencyTable[0] * iSampleRate);
 	}
 
 	readInc = table->sampleRate / (this->sampleRate * table->hopSize);	
+}
+
+void CQTTablePlayer::noteOn(double timeStamp, unsigned char ch, unsigned char note, unsigned char vel)
+{
+	if (table)
+	{
+		this->resetOnNextProcess = true;
+	}
+}
+
+void CQTTablePlayer::noteOff(double timeStamp, unsigned char ch, unsigned char note)
+{
+}
+
+void CQTTablePlayer::midiEvent(double timeStamp, std::vector<unsigned char>* message)
+{
 }
 
