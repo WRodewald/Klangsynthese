@@ -140,12 +140,12 @@ CQTAdditiveTable::FileVariable CQTAdditiveTable::getVariable(const std::string &
 	// imput is expected to be some string with leading / trailing widecards
 	// first thing to do is to strip those
 
-	static std::regex regexInclude			("[\\s]*Include[\\s]*", std::regex::flag_type::icase); 
-	static std::regex regexSampleRate		("[\\s]*SampleRate[\\s]*", std::regex::flag_type::icase); 
-	static std::regex regexHopSize			("[\\s]*HopSize[\\s]*", std::regex::flag_type::icase); 
-	static std::regex regexBinsPerSemitone	("[\\s]*BinsPerSemitone[\\s]*", std::regex::flag_type::icase);
-	static std::regex regexFrequency		("[\\s]*Frequency[\\s]*", std::regex::flag_type::icase);
-	static std::regex regexAmplitudes		("[\\s]*Amplitudes?[\\s]*", std::regex::flag_type::icase); 
+	static std::regex regexInclude			("[\\s]*Include[\\s]*", std::regex::icase); 
+	static std::regex regexSampleRate		("[\\s]*SampleRate[\\s]*", std::regex::icase); 
+	static std::regex regexHopSize			("[\\s]*HopSize[\\s]*", std::regex::icase); 
+	static std::regex regexBinsPerSemitone	("[\\s]*BinsPerSemitone[\\s]*", std::regex::icase);
+	static std::regex regexFrequency		("[\\s]*Frequency[\\s]*", std::regex::icase);
+	static std::regex regexAmplitudes		("[\\s]*Amplitudes?[\\s]*", std::regex::icase); 
 
 	if (std::regex_match(input, regexInclude))			return FileVariable::Include;
 	if (std::regex_match(input, regexSampleRate))		return FileVariable::SampleRate;
