@@ -14,6 +14,11 @@ include_directories(Libs/portaudio/include)
 add_subdirectory (Libs/tinyxml2)
 include_directories(Libs/tinyxml2)
 
+############# Cereal #############
+
+add_subdirectory (Libs/cereal-1.2.2)
+include_directories(Libs/cereal-1.2.2/include)
+
 
 ############# RtMidi #############
 
@@ -32,15 +37,34 @@ SET(SourceFiles
 	Source/MidiIO.cpp
 	
 	Source/Util/RingBuffer.h
-	Source/Util/StackBuffer.h
+	Source/Util/StackBuffer.h	
+	Source/Util/FilePath.h
+	Source/Util/DSPBasics.h
+	Source/Util/EnvelopeGen.h
+	
 	
 	Source/Entry.cpp
+	
 	Source/ConfigManager.h
 	Source/ConfigManager.cpp
+	
+	Source/VoiceManager.h
+	Source/VoiceManager.cpp
+	Source/VoiceLogic.h
+	Source/VoiceLogic.cpp
+	
+	Source/VoiceProcessor.h
+	Source/VoiceProcessor.cpp
+	
+	Source/Processor.h
+	Source/Processor.cpp
+	
 	Source/CQTAdditiveTable.h
 	Source/CQTAdditiveTable.cpp
 	Source/CQTTablePlayer.h
 	Source/CQTTablePlayer.cpp
+	Source/CQTTableManager.h
+	Source/CQTTableManager.cpp
 	
 	Libs/rtmidi-2.1.1/RtMidi.h
 	Libs/rtmidi-2.1.1/RtMidi.cpp
@@ -80,7 +104,6 @@ if(TARGET tinyxml2_static)
 elseif(TARGET tinyxml2)
 	target_link_libraries(Klangsynthese tinyxml2)	
 endif()
-
 
 ############# Port Audio #############
 

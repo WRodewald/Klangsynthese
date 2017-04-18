@@ -37,6 +37,7 @@ public:
 		unsigned int outChannels;
 		unsigned int frameSize;
 		float		 sampleRate;
+		float		 iSampleRate;
 
 		int			 inDevice;	// if < 0, the default device is used
 		int			 outDevice;
@@ -72,9 +73,9 @@ public:
 	bool startStream();
 	bool closeStream();
 
-	void getConfiguration(CallbackConfig &cfg, ConfigKeys keysToConfig);
+	void getConfiguration(CallbackConfig &cfg, ConfigKeys keysToConfig) const;
 
-	void		setCallback(AudioCallbackProvider* callbackProvider) { this->callbackProvider = callbackProvider;  };
+	void setCallback(AudioCallbackProvider* callbackProvider) { this->callbackProvider = callbackProvider;  };
 
 	const DebugData	* getDebugData();
 
@@ -94,10 +95,10 @@ private:
 	void processFrame();
 	bool evaluatePAError(PaError& err);
 
-	int queryNumber(int min, int max, std::string label);
-	int queryNumber(std::vector<int> aviable, std::string label);
+	int queryNumber(int min, int max, std::string label) const;
+	int queryNumber(std::vector<int> aviable, std::string label)  const;
 
-	void  printDevice(int deviceID);
+	void  printDevice(int deviceID)  const;
 private:
 	PaStream *stream;
 
@@ -133,5 +134,5 @@ private:
 class AudioCallbackProvider
 {
 public:
-	virtual void process(AudioIO::CallbackConfig &cfg, AudioIO::CallbackData &data) = 0;
+	virtual void process(const AudioIO::CallbackConfig &cfg, AudioIO::CallbackData *data) = 0;
 };

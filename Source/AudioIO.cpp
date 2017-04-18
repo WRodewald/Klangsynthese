@@ -112,7 +112,7 @@ void AudioIO::processFrame()
 		data->write[i] = &(outputBuffer[i][0]);
 	}
 
-	if (callbackProvider != NULL) callbackProvider->process(*cfg, *data);
+	if (callbackProvider != NULL) callbackProvider->process(*cfg, data);
 
 }
 
@@ -124,7 +124,7 @@ bool AudioIO::evaluatePAError(PaError & err)
 	return false;
 }
 
-int AudioIO::queryNumber(int min, int max, std::string label)
+int AudioIO::queryNumber(int min, int max, std::string label) const
 {
 	int number = min - 1;
 	while ((number < min) ||(number > max))
@@ -148,7 +148,7 @@ int AudioIO::queryNumber(int min, int max, std::string label)
 	return number;
 }
 
-int AudioIO::queryNumber(std::vector<int> aviable, std::string label)
+int AudioIO::queryNumber(std::vector<int> aviable, std::string label) const
 {
 	bool validInput = false;
 	int number = 0;
@@ -181,7 +181,7 @@ int AudioIO::queryNumber(std::vector<int> aviable, std::string label)
 	return number;
 }
 
-void AudioIO::printDevice(int deviceID)
+void AudioIO::printDevice(int deviceID) const
 {
 
 	if ((deviceID < 0) || (deviceID > Pa_GetDeviceCount())) return;
@@ -278,22 +278,22 @@ bool AudioIO::initStream(CallbackConfig cfg)
 
 	if (inputDevice != NULL)
 	{
-		inParameterPtr = &inParameter;
 		inParameter.channelCount = cfg.inChannels;
 		inParameter.device = inputDeviceID;
 		inParameter.hostApiSpecificStreamInfo = NULL;
 		inParameter.sampleFormat = paFloat32;
 		inParameter.suggestedLatency = inputDevice->defaultLowInputLatency;
+		inParameterPtr = &inParameter;
 	}
 
 	if (outputDevice != NULL)
 	{
-		outParameterPtr = &outParameter;
 		outParameter.channelCount = cfg.outChannels;
 		outParameter.device = outputDeviceID;
 		outParameter.hostApiSpecificStreamInfo = NULL;
 		outParameter.sampleFormat = paFloat32;
 		outParameter.suggestedLatency = outputDevice->defaultLowOutputLatency;
+		outParameterPtr = &outParameter;
 	}
 
 
@@ -395,7 +395,7 @@ bool AudioIO::closeStream()
 	return true;
 }
 
-void AudioIO::getConfiguration(AudioIO::CallbackConfig& cfg, ConfigKeys keys)
+void AudioIO::getConfiguration(AudioIO::CallbackConfig& cfg, ConfigKeys keys) const
 {
 	if (!portAudioInitialized) return;
 	unsigned int numDevices = Pa_GetDeviceCount();
@@ -442,8 +442,11 @@ void AudioIO::getConfiguration(AudioIO::CallbackConfig& cfg, ConfigKeys keys)
 	validSampleRates.push_back(176400);
 	validSampleRates.push_back(192000);
 
-	if(keys & ConfigKeys::Conf_SampleRate)
+	if (keys & ConfigKeys::Conf_SampleRate)
+	{
 		cfg.sampleRate = queryNumber(validSampleRates , "Sample Rate");
+		cfg.iSampleRate = 1. / (double)cfg.sampleRate;
+	}
 
 	if (keys & ConfigKeys::Conf_FrameSize)
 		cfg.frameSize = queryNumber(1, MaxFrameSize, "Frame Size");

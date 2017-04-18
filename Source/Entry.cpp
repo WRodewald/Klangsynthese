@@ -3,6 +3,8 @@
 #include "ConfigManager.h"
 #include "CQTAdditiveTable.h"
 #include "CQTTablePlayer.h"
+#include "CQTTableManager.h"
+#include "Processor.h"
 
 #include <iostream>
 #include <fstream>
@@ -16,12 +18,17 @@ void waitForStdIn()
 	std::cin.get();
 }
 
+#define  returnFail    { waitForStdIn(); return -1;}
+#define  returnSuccess { waitForStdIn(); return -0;}
+
 
 int main(int argc, char **argv)
 {
 	
-	bool configMode = false;
-	bool debugMode  = false;
+	bool multiThreading = false;
+	bool configMode		= false;
+	bool debugMode		= false;
+	bool cache			= false;
 	float cqtBinThreshold = 0;
 	std::string fileName;
 
@@ -31,24 +38,23 @@ int main(int argc, char **argv)
 	while (argIdx < argc)
 	{
 		std::string argument = std::string(argv[argIdx]);
-		std::regex configRegex("[\\\\\\/-]?[cC](onfig)?"); // yes
-		std::regex debugRegex( "[\\\\\\/-]?[dD](ebug)?");
-		std::regex thresRegex("[\\\\\\/-]?[tT](hreshold)?");
-		if(std::regex_match(argument, configRegex))
-		{
-			configMode = true;
-		}
-		else if (std::regex_match(argument, debugRegex))
-		{
-			debugMode = true;
-		}
+		std::regex configRegex("[\\\\\\/-]?C(onfig)?",	std::regex::icase); 
+		std::regex debugRegex( "[\\\\\\/-]?D(ebug)?",	std::regex::icase);
+		std::regex thresRegex("[\\\\\\/-]?T(hreshold)?",std::regex::icase);
+		std::regex mtRegex("[\\\\\\/-]?MT",				std::regex::icase);
+		std::regex cacheRegex("[\\\\\\/-]?cache",		std::regex::icase);
+
+		if(std::regex_match(argument,		configRegex))	configMode	   = true;
+		else if (std::regex_match(argument, debugRegex))	debugMode	   = true;
+		else if (std::regex_match(argument, mtRegex))		multiThreading = true;
+		else if (std::regex_match(argument, cacheRegex))	cache		   = true;
 		else if (std::regex_match(argument, thresRegex))
 		{
 			argIdx++;
 			if (argIdx >= argc)
 			{
 				std::cout << "Unexpected Argument (Threshold)" << std::endl;
-				return 0;
+				returnFail;
 			}
 			std::string thresholdString = std::string(argv[argIdx]);
 
@@ -59,7 +65,7 @@ int main(int argc, char **argv)
 			catch (const std::exception &e)
 			{
 				std::cout << "Unexpected Argument (Threshold)" << std::endl;
-				return 0;
+				returnFail;
 			}
 
 		}
@@ -68,28 +74,15 @@ int main(int argc, char **argv)
 			if (fileName.size() != 0) // fileName already set
 			{
 				std::cout << "Unexpected Argument" << std::endl;
-				return 0;
+				returnFail;
 			}
 			fileName = argument;
-			std::ifstream fileStream(fileName.c_str());
-			if (!fileStream.good())
-			{
-				std::cout << "File could not be opened" << std::endl;
-				return 0;
-			}
 		}
 		argIdx++;
 	}
 
 
-
-	// #################### MIDI IO ####################
-
-	MidiCaster midiCaster;
-
-	int midiInputPort = -1; // no input per default
-
-
+	
 
 	// #################### Audio IO ####################
 
@@ -102,6 +95,7 @@ int main(int argc, char **argv)
 	cfg.outChannels = 2;
 	cfg.frameSize = 64;
 	cfg.sampleRate = 44100;
+	cfg.iSampleRate = 1. / cfg.sampleRate;
 	cfg.inDevice = AudioIO::NoDevice;
 	cfg.outDevice = AudioIO::DefaultDevice;
 
@@ -115,7 +109,7 @@ int main(int argc, char **argv)
 	ConfigManager config("config.xml");	
 		
 	// if config is true update current variables with getConfiguration dialog
-	if (configMode)
+	if (false)
 	{
 
 		std::cout << std::endl << "Audio Configuration" << std::endl;
@@ -125,13 +119,7 @@ int main(int argc, char **argv)
 
 		config.setValue(ConfigManager::ID("Audio", "SampleRate"),	std::to_string(cfg.sampleRate));
 		config.setValue(ConfigManager::ID("Audio", "FrameSize"),	std::to_string(cfg.frameSize));
-		config.setValue(ConfigManager::ID("Audio", "OutputDevice"), std::to_string(cfg.outDevice));
-		
-		std::cout << std::endl << "MIDI Configuration" << std::endl;
-
-		midiCaster.getConfiguration(midiInputPort);
-
-		config.setValue(ConfigManager::ID("MIDI", "Input Port"), std::to_string(midiInputPort));
+		config.setValue(ConfigManager::ID("Audio", "OutputDevice"), std::to_string(cfg.outDevice));	
 	}
 	
 	// get audio configuration from config.xml
@@ -148,39 +136,87 @@ int main(int argc, char **argv)
 	{
 		cfg.outDevice = std::atoi(cfgValue.c_str());
 	}
-	if (config.getValue(ConfigManager::ID("MIDI", "Input Port"), cfgValue))
-	{
 
-		midiInputPort = std::atoi(cfgValue.c_str());
-	}
 	
 	// store changes to configuration
 	config.writeChanges(); 
 	
 
-
-	// #################### create CQG table ####################
+	// #################### create CQT manager ####################
 	
-	std::cout << "Import CQT Table" << std::endl;
+	std::cout << "Create CQT Manager" << std::endl;
 
-	CQTAdditiveTable * table = CQTAdditiveTable::createTableFromFile(fileName);
-
-	if (table == NULL)
+	CQTTableManager tableManager(debugMode); 
+	
+	if (fileName.size() > 0)
 	{
-		std::cout << "Could not import CQT Table" << std::endl;
-		std::cin.sync();
-		std::cin.get();
-		return 0;
+		std::cout << "Loading CQT table file: ";
+		bool success = tableManager.importTextFile(fileName, debugMode);
+		if (success)
+		{
+			std::cout << "success" << std::endl;
+		}
+		else
+		{
+			std::cout << "failed" << std::endl;
+			returnFail;
+		}
+
+		std::cout << "Interpolating CQT Tables" << std::endl;
+		tableManager.prepareTables({ 0, 128 });
+	}
+	else
+	{
+		std::cout << "Loading CQT table cache: ";
+		try
+		{
+			tableManager.loadBinaryCache("CQTTable.cache");
+			std::cout << "success" << std::endl;
+		}
+		catch (const std::exception & e)
+		{
+			std::cout << "failed" << std::endl;
+			returnFail;
+		}
+	}
+		
+	std::cout << "CQT Manager Initialized" << std::endl;
+
+	if (cache)
+	{
+		std::cout << "Caching CQT table: ";
+		try
+		{
+			tableManager.storeBinaryCache("CQTTable.cache");
+			std::cout << "success" << std::endl;
+			//returnSuccess;
+		}
+		catch (const std::exception & e)
+		{
+			std::cout << "failed" << std::endl;
+			returnFail;
+		}
 	}
 
-	CQTTablePlayer     player(cfg.frameSize, cqtBinThreshold);
-	player.setTable(table);
-	
+	if (tableManager.sanity() == false)
+	{
+		std::cout << "CQT Manger contains inconistent tables" << std::endl;
+		returnFail;
+	}
 
+	// #################### create Processor ####################
+	
+	const auto NumVoices = 1;
+	Processor processor(NumVoices, &tableManager);
+	processor.prepare(cfg);
+	audio.setCallback(&processor);
+	
 	// #################### MIDI Part 2 ####################
 
-	midiCaster.addListener(&player);
-	midiCaster.open(midiInputPort);
+	MidiCaster midiCaster;
+
+	midiCaster.addListener(&processor);
+	midiCaster.open();
 
 	// #################### start stream ####################
 
@@ -190,14 +226,11 @@ int main(int argc, char **argv)
 	bool state = true;
 	state &= audio.initStream(cfg);
 	state &= audio.startStream();
-	audio.setCallback(&player);
 
 	if (!state)
 	{
 		std::cout << "Faild to Start Audio Callback" << std::endl;
-		std::cin.sync();
-		std::cin.get();
-		return 0;
+		returnFail;
 	}
 
 
@@ -226,8 +259,6 @@ int main(int argc, char **argv)
 
 	std::cout << "Audio Callback Stopped" << std::endl;
 
-	std::cin.get();
-	std::cin.sync();
-	return 0;
+	returnSuccess;
 	
 }

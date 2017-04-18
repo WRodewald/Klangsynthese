@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <memory>
 #include "RtMidi.h"
 
 // MIDI I/O interface, only does input
@@ -18,12 +19,9 @@ class MidiCaster : protected MidiListener
 public:
 	MidiCaster();
 	~MidiCaster();
-
+		
+	void open();
 	
-	void open(int port);
-
-	void getConfiguration(int &port);
-
 	void addListener(MidiListener * listener);
 
 	static void rtMidiCallback(double timeStamp, std::vector<unsigned char> *message, void *userData);
@@ -33,11 +31,8 @@ public:
 	virtual void midiEvent(double timeStamp, std::vector<unsigned char> *message);
 
 private:
-	int queryNumber(int min, int max, std::string label);
-
-private:
 	std::vector<MidiListener*> listeners;
-	RtMidiIn *input;
+	std::vector<RtMidiIn*>		inputs;
 };
 
 

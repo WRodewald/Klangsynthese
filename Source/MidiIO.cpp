@@ -35,59 +35,29 @@ void MidiCaster::rtMidiCallback(double timeStamp, std::vector<unsigned char>* me
 }
 
 MidiCaster::MidiCaster()
-	:
-	input(NULL)
 {
-	input = new RtMidiIn();
-	input->setCallback(rtMidiCallback, this);
+	RtMidiIn tempMidiIn;
+	auto  numPorts = tempMidiIn.getPortCount();
+	
+	for (int i = 0; i < numPorts; i++)
+	{
+		auto midiIn = new RtMidiIn;
+		midiIn->setCallback(rtMidiCallback, this);
+		inputs.push_back(midiIn);
+	}
 }
 
 MidiCaster::~MidiCaster()
 {
-	if (input) delete input;
 }
 
-void MidiCaster::open(int port)
+void MidiCaster::open()
 {
-	if (port >= 0) input->openPort(port);
-}
-
-void MidiCaster::getConfiguration(int & port)
-{
-	std::cout << "Aviable Ports" << std::endl;
-
-	std::cout << "[" << -1 << "]" << "\t" << "No Port (No Input)" << std::endl;
 	
-	for (int i = 0; i < input->getPortCount(); i++)
+	for (int i = 0; i < inputs.size(); i++)
 	{
-		std::string portName = input->getPortName(i);
-		std::cout << "[" << i << "]" << "\t" << portName << std::endl;
+		inputs[i]->openPort(i);
 	}
-	port = queryNumber(-1, input->getPortCount() - 1, "Input Port");
-}
-
-int MidiCaster::queryNumber(int min, int max, std::string label)
-{
-	int number = min - 1;
-	while ((number < min) || (number > max))
-	{
-		std::cout << label << ": ";
-
-		std::string input;
-		std::getline(std::cin, input);
-
-		number = min - 1;
-		try
-		{
-			number = std::stoi(input);
-		}
-		catch (std::exception &e)
-		{
-			number = min - 1;
-		}
-		if (((number < min) || (number > max))) std::cout << "Invalid Input" << std::endl;
-	}
-	return number;
 }
 
 void MidiCaster::addListener(MidiListener * listener)
