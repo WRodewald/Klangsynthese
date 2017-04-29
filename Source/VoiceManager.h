@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <list>
+#include <cstdint>
 
 // function schedules note events and distributes them to Voices
 
@@ -273,7 +274,7 @@ namespace VoiceManager
 			{
 				return voices[id];
 			}
-			return NULL;
+			return nullptr;
 		}
 		
 		unsigned int getNumActiveNotes();

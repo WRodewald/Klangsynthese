@@ -17,9 +17,9 @@
 namespace FilePath
 {
 
-	std::string getPathOfFile(std::string file);
+	inline std::string getPathOfFile(std::string file);
 
-	char delim();
+	inline char delim();
 
 
 };
@@ -34,11 +34,12 @@ std::string FilePath::getPathOfFile(std::string file)
 
 
 	auto lastOcc = file.find_last_of(delim);
-
+	std::cout << "was asked for " << file << std::endl;
 	if (lastOcc != std::string::npos)
 	{
 		return file.substr(0, lastOcc);
 	}
+
 
 	return file;
 }

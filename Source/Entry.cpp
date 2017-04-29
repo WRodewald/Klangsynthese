@@ -1,11 +1,12 @@
 #include "AudioIO.h"
 #include "MidiIO.h"
 #include "ConfigManager.h"
-#include "CQTAdditiveTable.h"
-#include "CQTTablePlayer.h"
-#include "CQTTableManager.h"
+#include "CQTTable.h"
+#include "CQTTable.h"
+#include "TablePlayer.h"
+#include "TableManager.h"
 #include "Processor.h"
-
+#include "Util\FilePath.h"
 #include <iostream>
 #include <fstream>
 #include <regex>
@@ -24,13 +25,20 @@ void waitForStdIn()
 
 int main(int argc, char **argv)
 {
-	
+
 	bool multiThreading = false;
 	bool configMode		= false;
 	bool debugMode		= false;
-	bool cache			= false;
 	float cqtBinThreshold = 0;
+	int numVoices = 1;
 	std::string fileName;
+
+	std::regex configRegex("[\\\\\\/-]?C(onfig)?", std::regex::icase);
+	std::regex debugRegex("[\\\\\\/-]?D(ebug)?", std::regex::icase);
+	std::regex thresRegex("[\\\\\\/-]?T(hreshold)?", std::regex::icase);
+	std::regex mtRegex("[\\\\\\/-]?MT", std::regex::icase);
+	std::regex voicesRegex("[\\\\\\/-]?v(oices)", std::regex::icase);
+
 
 
 	// #################### read arguments ####################
@@ -38,16 +46,11 @@ int main(int argc, char **argv)
 	while (argIdx < argc)
 	{
 		std::string argument = std::string(argv[argIdx]);
-		std::regex configRegex("[\\\\\\/-]?C(onfig)?",	std::regex::icase); 
-		std::regex debugRegex( "[\\\\\\/-]?D(ebug)?",	std::regex::icase);
-		std::regex thresRegex("[\\\\\\/-]?T(hreshold)?",std::regex::icase);
-		std::regex mtRegex("[\\\\\\/-]?MT",				std::regex::icase);
-		std::regex cacheRegex("[\\\\\\/-]?cache",		std::regex::icase);
-
+		
 		if(std::regex_match(argument,		configRegex))	configMode	   = true;
 		else if (std::regex_match(argument, debugRegex))	debugMode	   = true;
+		else if (std::regex_match(argument, debugRegex))	debugMode	   = true;
 		else if (std::regex_match(argument, mtRegex))		multiThreading = true;
-		else if (std::regex_match(argument, cacheRegex))	cache		   = true;
 		else if (std::regex_match(argument, thresRegex))
 		{
 			argIdx++;
@@ -58,7 +61,7 @@ int main(int argc, char **argv)
 			}
 			std::string thresholdString = std::string(argv[argIdx]);
 
-			try 
+			try
 			{
 				cqtBinThreshold = std::stof(thresholdString);
 			}
@@ -69,7 +72,30 @@ int main(int argc, char **argv)
 			}
 
 		}
-		else 
+		else if (std::regex_match(argument, voicesRegex))
+		{
+			argIdx++;
+			if (argIdx >= argc)
+			{
+				std::cout << "Unexpected Argument (Num Voices)" << std::endl;
+				returnFail;
+			}
+
+			std::string voicesStr = std::string(argv[argIdx]);
+
+			try
+			{
+				numVoices = std::stoi(voicesStr);
+				if (numVoices < 1) numVoices = 1;
+			}
+			catch (const std::exception &e)
+			{
+				std::cout << "Unexpected Argument (Num Voices)" << std::endl;
+				returnFail;
+			}
+
+		}
+		else
 		{
 			if (fileName.size() != 0) // fileName already set
 			{
@@ -81,8 +107,80 @@ int main(int argc, char **argv)
 		argIdx++;
 	}
 
+	if(configMode) std::cout << "Config Mode" << std::endl;
+	if(debugMode) std::cout << "Debug Mode" << std::endl;
 
+
+	// #################### create Table manager ####################
+
+	std::cout << "Create Table Manager" << std::endl;
+
+	TableManager tableManager(debugMode);
+
+	// find out if we include a cache file or a txt file 
+
+	auto suffixStart = fileName.find_last_of('.');
+	auto suffix = fileName.substr(suffixStart, fileName.size());	
 	
+	if (suffix != ".table")
+	{
+		std::cout << "Loading Table File " << fileName << ": ";
+		bool success = tableManager.importTextFile(fileName, debugMode);
+		if (success)
+		{
+			std::cout << "success" << std::endl;
+		}
+		else
+		{
+			std::cout << "failed" << std::endl;
+			returnFail;
+		}
+
+		std::cout << "Interpolating Tables" << std::endl;
+		tableManager.prepareTablesAutoRange();
+
+		try
+		{
+			auto fileNameWOSuffix = fileName.substr(0, suffixStart);
+			auto fileNameCache    = fileNameWOSuffix.append(".table");
+			tableManager.storeBinaryCache(fileNameCache);
+		}
+		catch (const std::exception & e)
+		{
+			std::cout << "Error caching file" << std::endl;
+			returnFail;
+		}
+	}
+	else
+	{
+		std::cout << "Loading CQT table cache: ";
+		try
+		{
+			tableManager.loadBinaryCache(fileName);
+			std::cout << "success" << std::endl;
+		}
+		catch (const std::exception & e)
+		{
+			std::cout << "failed" << std::endl;
+			returnFail;
+		}
+	}
+
+	std::cout << "Table Manager Initialized" << std::endl;
+
+	auto errCode = tableManager.sanity();
+	if (errCode != TableManager::ErrorCode::NoError)
+	{
+		if (errCode & TableManager::ErrorCode::InvalidNumBins)
+		{
+			std::cout << "Table Manger contains tables with various number of bins" << std::endl;
+		}
+		if (errCode & TableManager::ErrorCode::InvalidTables)
+		{
+			std::cout << "Table Manger contains invalid tables" << std::endl;
+		}
+		returnFail;
+	}
 
 	// #################### Audio IO ####################
 
@@ -106,10 +204,10 @@ int main(int argc, char **argv)
 	std::cout << "Reading Config.xml" << std::endl;
 
 	// load config manager, read config.xml if existing
-	ConfigManager config("config.xml");	
-		
+	ConfigManager config("config.xml");
+
 	// if config is true update current variables with getConfiguration dialog
-	if (false)
+	if (configMode)
 	{
 
 		std::cout << std::endl << "Audio Configuration" << std::endl;
@@ -119,9 +217,9 @@ int main(int argc, char **argv)
 
 		config.setValue(ConfigManager::ID("Audio", "SampleRate"),	std::to_string(cfg.sampleRate));
 		config.setValue(ConfigManager::ID("Audio", "FrameSize"),	std::to_string(cfg.frameSize));
-		config.setValue(ConfigManager::ID("Audio", "OutputDevice"), std::to_string(cfg.outDevice));	
+		config.setValue(ConfigManager::ID("Audio", "OutputDevice"), std::to_string(cfg.outDevice));
 	}
-	
+
 	// get audio configuration from config.xml
 	std::string cfgValue;
 	if (config.getValue(ConfigManager::ID("Audio", "SampleRate"), cfgValue))
@@ -137,80 +235,20 @@ int main(int argc, char **argv)
 		cfg.outDevice = std::atoi(cfgValue.c_str());
 	}
 
-	
+
 	// store changes to configuration
-	config.writeChanges(); 
-	
+	config.writeChanges();
 
-	// #################### create CQT manager ####################
-	
-	std::cout << "Create CQT Manager" << std::endl;
 
-	CQTTableManager tableManager(debugMode); 
-	
-	if (fileName.size() > 0)
-	{
-		std::cout << "Loading CQT table file: ";
-		bool success = tableManager.importTextFile(fileName, debugMode);
-		if (success)
-		{
-			std::cout << "success" << std::endl;
-		}
-		else
-		{
-			std::cout << "failed" << std::endl;
-			returnFail;
-		}
 
-		std::cout << "Interpolating CQT Tables" << std::endl;
-		tableManager.prepareTables({ 0, 128 });
-	}
-	else
-	{
-		std::cout << "Loading CQT table cache: ";
-		try
-		{
-			tableManager.loadBinaryCache("CQTTable.cache");
-			std::cout << "success" << std::endl;
-		}
-		catch (const std::exception & e)
-		{
-			std::cout << "failed" << std::endl;
-			returnFail;
-		}
-	}
-		
-	std::cout << "CQT Manager Initialized" << std::endl;
-
-	if (cache)
-	{
-		std::cout << "Caching CQT table: ";
-		try
-		{
-			tableManager.storeBinaryCache("CQTTable.cache");
-			std::cout << "success" << std::endl;
-			//returnSuccess;
-		}
-		catch (const std::exception & e)
-		{
-			std::cout << "failed" << std::endl;
-			returnFail;
-		}
-	}
-
-	if (tableManager.sanity() == false)
-	{
-		std::cout << "CQT Manger contains inconistent tables" << std::endl;
-		returnFail;
-	}
 
 	// #################### create Processor ####################
-	
-	const auto NumVoices = 1;
-	Processor processor(NumVoices, &tableManager);
+
+
+    Processor processor(numVoices, &tableManager);
 	processor.prepare(cfg);
 	audio.setCallback(&processor);
-	
+
 	// #################### MIDI Part 2 ####################
 
 	MidiCaster midiCaster;
@@ -260,5 +298,5 @@ int main(int argc, char **argv)
 	std::cout << "Audio Callback Stopped" << std::endl;
 
 	returnSuccess;
-	
+
 }

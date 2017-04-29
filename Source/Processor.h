@@ -1,8 +1,8 @@
 #pragma once
 
 #include "VoiceManager.h"
-#include "CQTTableManager.h"
-#include "CQTTablePlayer.h"
+#include "TableManager.h"
+#include "TablePlayer.h"
 #include "AudioIO.h"
 #include "MidiIO.h"
 #include "VoiceProcessor.h"
@@ -11,7 +11,7 @@
 class Processor : public AudioCallbackProvider, public MidiListener
 {
 public:
-	Processor(unsigned int numVoices, const CQTTableManager *tableManager);
+	Processor(unsigned int numVoices, const TableManager *tableManager);
 
 
 	virtual void noteOn(double timeStamp, unsigned char ch, unsigned char note, unsigned char vel) override;
@@ -28,7 +28,7 @@ private:
 	std::unique_ptr<SimpleVoiceLogic> voiceLogic;
 
 	VoiceManager::Control		  voiceControl;
-	const CQTTableManager * const tableManager;
+	const TableManager * const tableManager;
 
 	std::vector<std::unique_ptr<VoiceProcessor>> voices;
 

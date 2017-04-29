@@ -1,6 +1,6 @@
 #include "VoiceProcessor.h"
 
-VoiceProcessor::VoiceProcessor(unsigned int voiceID, const CQTTableManager * const tableManager)
+VoiceProcessor::VoiceProcessor(unsigned int voiceID, const TableManager * const tableManager)
 	:
 	tableManager(tableManager),
 	AVoiceHandle(voiceID)

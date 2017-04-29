@@ -1,0 +1,7 @@
+[IncludeFile]
+Include=MA_ES_A-So_f_li_C2.txt 
+Include=MA_ES_A-So_f_li_C3.txt 
+Include=MA_ES_A-So_f_li_C4.txt 
+Include=MA_ES_A-So_f_li_C5.txt 
+Include=MA_ES_A-So_f_li_C6.txt 
+Include=MA_ES_A-So_f_li_C7.txt 

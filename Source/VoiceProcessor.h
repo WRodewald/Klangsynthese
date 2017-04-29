@@ -1,8 +1,8 @@
 #pragma once
 
 #include "VoiceManager.h"
-#include "CQTTableManager.h"
-#include "CQTTablePlayer.h"
+#include "TableManager.h"
+#include "TablePlayer.h"
 
 #include <atomic>
 #include <mutex>
@@ -10,7 +10,7 @@
 class VoiceProcessor  : public VoiceManager::AVoiceHandle
 {
 public:
-	VoiceProcessor(unsigned int voiceID, const CQTTableManager * const tableManager);
+	VoiceProcessor(unsigned int voiceID, const TableManager * const tableManager);
 
 public:
 
@@ -34,8 +34,8 @@ private:
 private:
 
 
-	CQTTablePlayer player;
-	const CQTTableManager * const tableManager;
+	TablePlayer player;
+	const TableManager * const tableManager;
 
 	AsyncEvent asyncEvent{ AsyncEvent::NoEvent };
 	std::mutex asyncEventMutex;

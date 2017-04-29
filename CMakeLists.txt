@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.6.0)
+cmake_minimum_required (VERSION 3.2.0)
 project (Klangsynthese)
 
 
@@ -41,6 +41,7 @@ SET(SourceFiles
 	Source/Util/FilePath.h
 	Source/Util/DSPBasics.h
 	Source/Util/EnvelopeGen.h
+	Source/Util/QuickMovingAverage.h
 	
 	
 	Source/Entry.cpp
@@ -59,12 +60,15 @@ SET(SourceFiles
 	Source/Processor.h
 	Source/Processor.cpp
 	
-	Source/CQTAdditiveTable.h
-	Source/CQTAdditiveTable.cpp
-	Source/CQTTablePlayer.h
-	Source/CQTTablePlayer.cpp
-	Source/CQTTableManager.h
-	Source/CQTTableManager.cpp
+	Source/ATable.h
+	Source/CQTTable.h
+	Source/CQTTable.cpp
+	Source/HarmonicTable.h
+	Source/HarmonicTable.cpp
+	Source/TablePlayer.h
+	Source/TablePlayer.cpp
+	Source/TableManager.h
+	Source/TableManager.cpp
 	
 	Libs/rtmidi-2.1.1/RtMidi.h
 	Libs/rtmidi-2.1.1/RtMidi.cpp

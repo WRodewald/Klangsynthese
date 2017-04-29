@@ -2,7 +2,7 @@
 #include "VoiceLogic.h"
 #include <memory>
 
-Processor::Processor(unsigned int numVoices, const CQTTableManager * tableManager)
+Processor::Processor(unsigned int numVoices, const TableManager * tableManager)
 	:
 	tableManager(tableManager),
 	numVoices(numVoices)
@@ -11,14 +11,14 @@ Processor::Processor(unsigned int numVoices, const CQTTableManager * tableManage
 	std::vector<VoiceManager::AVoiceHandle*> voiceHandles;
 	for (int i = 0; i < numVoices; i++)
 	{
-		voices.push_back(std::make_unique<VoiceProcessor>(i, tableManager));
+		voices.push_back(std::unique_ptr<VoiceProcessor>(new VoiceProcessor(i, tableManager)));
 		voiceHandles.push_back(voices[i].get());
 	}
 
 	voiceControl.setVoices(voiceHandles);
 
 	// set logic
-	voiceLogic = std::make_unique<SimpleVoiceLogic>();
+	voiceLogic = std::unique_ptr<SimpleVoiceLogic>(new SimpleVoiceLogic());
 	voiceControl.setLogic(voiceLogic.get());
 }
 

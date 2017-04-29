@@ -1,8 +1,0 @@
-[IncludeFile]
-
-Include=Piano_C0.txt 
-Include=Piano_C1.txt 
-Include=Piano_C2.txt 
-Include=Piano_C3.txt 
-Include=Piano_C4.txt 
-Include=Piano_C5.txt 
