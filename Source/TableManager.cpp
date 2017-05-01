@@ -12,7 +12,7 @@
 #include "cereal/archives/binary.hpp"
 #include "cereal/types/array.hpp"
 #include "cereal/types/memory.hpp"
-#include "cereal\types\polymorphic.hpp"
+#include "cereal/types/polymorphic.hpp"
 
 CEREAL_REGISTER_TYPE(HarmonicTable)
 CEREAL_REGISTER_POLYMORPHIC_RELATION(ATable, HarmonicTable)
@@ -39,11 +39,12 @@ void TableManager::loadBinaryCache(std::string filename)
 
 bool TableManager::importTextFile(std::string filename, bool useMT)
 {
+
 	auto fileType = getFileTypeFromFile(filename);
 
 	if (fileType == FileType::CQTTable)
 	{
-
+		
 		if(debugMode) std::printf("Importing CQT Table %s \n", filename.c_str());
 		// include file, done
 		bool res = importTableFile(createCQTTableFromFile(filename));
@@ -53,7 +54,7 @@ bool TableManager::importTextFile(std::string filename, bool useMT)
 	}
 	if (fileType == FileType::HarmonicTable)
 	{
-
+		
 		if (debugMode) std::printf("Importing Harmonic Table %s \n", filename.c_str());
 		// include file, done
 		bool res = importTableFile(createHarmonicTableFromFile(filename));
@@ -85,9 +86,12 @@ bool TableManager::importIncludeFile(std::string filename, bool useMT)
 	std::string line;
 	while (std::getline(infile, line))
 	{
+
 		lineCounter++;
 		if (line.size() > 2 && (line[0] == '/') && (line[1] == '/')) continue; 
 		
+
+
 		// after separate, line contains value only
 		FileVariable var = separateVariableAndValue(line);
 
@@ -98,7 +102,9 @@ bool TableManager::importIncludeFile(std::string filename, bool useMT)
 		}
 
 	}
-	
+
+	std::cout << "IncludeList is " << includeList.size() << " files long." << std::endl;	
+
 	if (includeList.size() > 0)
 	{
 		std::vector<bool> returnList(includeList.size(), true);
@@ -561,7 +567,7 @@ HarmonicTable * TableManager::createHarmonicTableFromFile(std::string filename, 
 }
 
 TableManager::FileType TableManager::getFileTypeFromFile(std::string filename)
-{
+{	
 	std::ifstream infile(filename);
 	// we expect something like variable=value, value is a int, float or list of both (separated by comma)
 

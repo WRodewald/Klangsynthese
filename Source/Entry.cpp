@@ -6,12 +6,12 @@
 #include "TablePlayer.h"
 #include "TableManager.h"
 #include "Processor.h"
-#include "Util\FilePath.h"
+#include "Util/FilePath.h"
 #include <iostream>
 #include <fstream>
 #include <regex>
 #include <future>
-
+#include <cmath>
 // function blocks process by waiting for enter key
 void waitForStdIn()
 {

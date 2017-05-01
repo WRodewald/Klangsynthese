@@ -1,6 +1,6 @@
 #include "VoiceManager.h"
 #include <algorithm>
-
+#include <cmath>
 #ifdef min
 #undef min
 #endif
