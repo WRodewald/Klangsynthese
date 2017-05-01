@@ -13,6 +13,7 @@
 
 using DSPBasics::OnePole;
 using DSPBasics::SineGen;
+using DSPBasics::SineGenComplex;
 
 class TablePlayer
 {
@@ -44,7 +45,7 @@ private:
 	bool gated{ false };
 
 	// sine generators
-	std::vector<SineGen>			generators;
+	std::vector<SineGenComplex>		generators;
 	AREnvelope						masterEnv;
 	
 	// fast access buffers for read positions

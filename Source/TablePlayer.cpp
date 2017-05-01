@@ -59,7 +59,7 @@ void TablePlayer::process(const AudioIO::CallbackConfig & cfg, AudioIO::Callback
 		{
 			auto &harmonic = tableBins[f]; // create a reference to the amplitude table to lower access overhead
 			auto &envelope = harmonic.envelope;
-			SineGen * generator = &generators[f];
+			auto generator = &generators[f];
 
 			float amplitude = (1.f - readPosFrac[i]) * envelope[readPosInt[i]] + (readPosFrac[i]) * envelope[readPosInt[i] + 1];
 			float sine = generator->tick();
@@ -99,15 +99,15 @@ void TablePlayer::prepareTablePlayback()
 
 	auto numBins = table->getData().size();
 
-	if (generators.size() < numBins) generators = std::vector<SineGen>(numBins);
+	if (generators.size() < numBins) generators = std::vector<SineGenComplex>(numBins);
 
 
 	for (int f = 0; f < numBins; f++)
 	{
-		generators[f] = SineGen(); // reset sine gen
+		generators[f] = SineGenComplex(); // reset sine gen
 		auto freq = table->getData()[f].frequency * cfg->iSampleRate;
 		generators[f].setFrequency((freq < 0.5) ? freq : 0);
-		generators[f].setMaster(&generators[0]);
+		//generators[f].setMaster(&generators[0]);
 	}
 
 	readInc = table->getConfig().sampleRate / (cfg->sampleRate * table->getConfig().hopSize);
