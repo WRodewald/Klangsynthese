@@ -97,13 +97,13 @@ bool TableManager::importIncludeFile(std::string filename, bool useMT)
 
 		if (var == FileVariable::Include)
 		{
-			auto fullPath = prependPath + FilePath::delim() +  line;
+			auto file = FilePath::clipWhiteSpaces(line);
+			auto fullPath = prependPath + FilePath::delim() + file;
 			includeList.push_back(fullPath);
 		}
 
 	}
 
-	std::cout << "IncludeList is " << includeList.size() << " files long." << std::endl;	
 
 	if (includeList.size() > 0)
 	{

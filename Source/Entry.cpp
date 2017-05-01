@@ -106,11 +106,7 @@ int main(int argc, char **argv)
 		}
 		argIdx++;
 	}
-
-	if(configMode) std::cout << "Config Mode" << std::endl;
-	if(debugMode) std::cout << "Debug Mode" << std::endl;
-
-
+	
 	// #################### create Table manager ####################
 
 	std::cout << "Create Table Manager" << std::endl;
@@ -124,7 +120,7 @@ int main(int argc, char **argv)
 	
 	if (suffix != ".table")
 	{
-		std::cout << "Loading Table File " << fileName << ": ";
+		std::cout << "Loading Table File " << fileName << ":" << std::endl;;
 		bool success = tableManager.importTextFile(fileName, debugMode);
 		if (success)
 		{

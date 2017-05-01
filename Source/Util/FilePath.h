@@ -3,6 +3,7 @@
 #include <memory>
 #include <iostream>
 #include <cstdlib>
+#include <regex>
 
 #if _WIN32
 	#define WIN
@@ -21,6 +22,8 @@ namespace FilePath
 
 	inline char delim();
 
+	inline std::string clipWhiteSpaces(std::string str);
+
 
 };
 
@@ -34,7 +37,6 @@ std::string FilePath::getPathOfFile(std::string file)
 
 
 	auto lastOcc = file.find_last_of(delim);
-	std::cout << "was asked for " << file << std::endl;
 	if (lastOcc != std::string::npos)
 	{
 		return file.substr(0, lastOcc);
@@ -51,5 +53,15 @@ char FilePath::delim()
 #else
 	return '/';
 #endif
+}
+
+std::string FilePath::clipWhiteSpaces(std::string str)
+{
+	static const std::regex regexLeadingWS("^[\\s]+", std::regex::icase);
+	static const std::regex regexTrailingWS("[\\s]+$", std::regex::icase);
+
+	str = std::regex_replace(str, regexLeadingWS, "");
+	return std::regex_replace(str, regexTrailingWS, "");
+	 
 }
 
