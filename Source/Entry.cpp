@@ -30,13 +30,13 @@ int main(int argc, char **argv)
 	bool multiThreading = false;
 	bool configMode		= false;
 	bool debugMode		= false;
-	float cqtBinThreshold = 0;
+	int limit = -1;
 	int numVoices = 1;
 	std::string fileName;
 
 	std::regex configRegex("[\\\\\\/-]?C(onfig)?", std::regex::icase);
 	std::regex debugRegex("[\\\\\\/-]?D(ebug)?", std::regex::icase);
-	std::regex thresRegex("[\\\\\\/-]?T(hreshold)?", std::regex::icase);
+	std::regex limitRegex("[\\\\\\/-]?l(imit)?", std::regex::icase);
 	std::regex mtRegex("[\\\\\\/-]?MT", std::regex::icase);
 	std::regex voicesRegex("[\\\\\\/-]?v(oices)", std::regex::icase);
 	std::regex autoRegex("[\\\\\\/-]?a(uto)", std::regex::icase);
@@ -54,7 +54,7 @@ int main(int argc, char **argv)
 		else if (std::regex_match(argument, debugRegex))	debugMode	   = true;
 		else if (std::regex_match(argument, debugRegex))	debugMode	   = true;
 		else if (std::regex_match(argument, mtRegex))		multiThreading = true;
-		else if (std::regex_match(argument, thresRegex))
+		else if (std::regex_match(argument, limitRegex))
 		{
 			argIdx++;
 			if (argIdx >= argc)
@@ -62,11 +62,11 @@ int main(int argc, char **argv)
 				std::cout << "Unexpected Argument (Threshold)" << std::endl;
 				returnFail;
 			}
-			std::string thresholdString = std::string(argv[argIdx]);
+			std::string limitString = std::string(argv[argIdx]);
 
 			try
 			{
-				cqtBinThreshold = std::stof(thresholdString);
+				limit = std::stof(limitString);
 			}
 			catch (const std::exception &e)
 			{
@@ -164,6 +164,9 @@ int main(int argc, char **argv)
 			returnFail;
 		}
 	}
+
+	if (limit > 0) tableManager.limitNumActiveBins(limit);
+
 
 	std::cout << "Table Manager Initialized" << std::endl;
 

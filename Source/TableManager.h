@@ -54,6 +54,9 @@ public:
 	bool prepareTablesAutoRange();
 	bool prepareTables(std::pair<unsigned int, unsigned int> range = { 0,128 });
 
+	void applyThreshold(float val);
+	void limitNumActiveBins(unsigned int num);
+
 	ErrorCode sanity();
 
 	const ATable * getTable(unsigned int midiNote) const;

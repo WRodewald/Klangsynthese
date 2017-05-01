@@ -360,7 +360,7 @@ bool TableManager::prepareTables(std::pair<unsigned int, unsigned int> range)
 			{
 				auto newTable = tables[lastTableIdx]->interpolateTable(*tables[nextTableIdx], i);
 				tables[i] = std::shared_ptr<ATable>(newTable);
-				if (newTable->getData()[0].envelope.size() < 1)
+				if (newTable->getBins()[0].envelope.size() < 1)
 				{
 					return false;
 				}
@@ -369,7 +369,7 @@ bool TableManager::prepareTables(std::pair<unsigned int, unsigned int> range)
 			{
 				auto newTable = tables[lastTableIdx]->createShiftedTable(i);
 				tables[i] = std::shared_ptr<ATable>(newTable);
-				if (newTable->getData()[0].envelope.size() < 1)
+				if (newTable->getBins()[0].envelope.size() < 1)
 				{
 					return false;
 				}
@@ -378,7 +378,7 @@ bool TableManager::prepareTables(std::pair<unsigned int, unsigned int> range)
 			{
 				auto newTable = tables[nextTableIdx]->createShiftedTable(i);
 				tables[i] = std::shared_ptr<ATable>(newTable);
-				if (newTable->getData()[0].envelope.size() < 1)
+				if (newTable->getBins()[0].envelope.size() < 1)
 				{
 					return false;
 				}
@@ -389,8 +389,26 @@ bool TableManager::prepareTables(std::pair<unsigned int, unsigned int> range)
 			lastTableIdx = i;
 			nextTableIdx = findNextTableFrom(i + 1);			
 		}
+
+		tables[i]->refreshActiveBins();
 	}
 	return true;
+}
+
+void TableManager::applyThreshold(float val)
+{
+	for (auto table : tables)
+	{
+		if (table != nullptr) table->applyThreshold(val);
+	}
+}
+
+void TableManager::limitNumActiveBins(unsigned int num)
+{
+	for (auto table : tables)
+	{
+		if (table != nullptr) table->limitNumActiveBins(num);
+	}
 }
 
 TableManager::ErrorCode TableManager::sanity()
@@ -407,9 +425,9 @@ TableManager::ErrorCode TableManager::sanity()
 		}
 
 		if (numBins < 0)
-			numBins = table->getData().size();
+			numBins = table->getBins().size();
 		else
-			if (numBins != table->getData().size()) 
+			if (numBins != table->getBins().size())
 				return ErrorCode::InvalidNumBins;
 	}
 	return ErrorCode::NoError;
