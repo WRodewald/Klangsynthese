@@ -26,6 +26,7 @@ void waitForStdIn()
 int main(int argc, char **argv)
 {
 
+	bool autoMode       = false;
 	bool multiThreading = false;
 	bool configMode		= false;
 	bool debugMode		= false;
@@ -38,6 +39,7 @@ int main(int argc, char **argv)
 	std::regex thresRegex("[\\\\\\/-]?T(hreshold)?", std::regex::icase);
 	std::regex mtRegex("[\\\\\\/-]?MT", std::regex::icase);
 	std::regex voicesRegex("[\\\\\\/-]?v(oices)", std::regex::icase);
+	std::regex autoRegex("[\\\\\\/-]?a(uto)", std::regex::icase);
 
 
 
@@ -47,7 +49,8 @@ int main(int argc, char **argv)
 	{
 		std::string argument = std::string(argv[argIdx]);
 		
-		if(std::regex_match(argument,		configRegex))	configMode	   = true;
+		if(std::regex_match(argument,		autoRegex))		autoMode	   = true;
+		else if(std::regex_match(argument,		configRegex))	configMode	   = true;
 		else if (std::regex_match(argument, debugRegex))	debugMode	   = true;
 		else if (std::regex_match(argument, debugRegex))	debugMode	   = true;
 		else if (std::regex_match(argument, mtRegex))		multiThreading = true;
@@ -241,7 +244,7 @@ int main(int argc, char **argv)
 	// #################### create Processor ####################
 
 
-    Processor processor(numVoices, &tableManager);
+    Processor processor(numVoices, &tableManager, autoMode);
 	processor.prepare(cfg);
 	audio.setCallback(&processor);
 

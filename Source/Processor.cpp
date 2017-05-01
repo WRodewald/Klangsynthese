@@ -2,10 +2,11 @@
 #include "VoiceLogic.h"
 #include <memory>
 
-Processor::Processor(unsigned int numVoices, const TableManager * tableManager)
+Processor::Processor(unsigned int numVoices, const TableManager * tableManager, bool doAuto)
 	:
 	tableManager(tableManager),
-	numVoices(numVoices)
+	numVoices(numVoices),
+	doAuto(doAuto)
 {
 	// create voices
 	std::vector<VoiceManager::AVoiceHandle*> voiceHandles;
@@ -20,6 +21,18 @@ Processor::Processor(unsigned int numVoices, const TableManager * tableManager)
 	// set logic
 	voiceLogic = std::unique_ptr<SimpleVoiceLogic>(new SimpleVoiceLogic());
 	voiceControl.setLogic(voiceLogic.get());
+
+
+	for (int i = 0; i < 128; i++)
+	{
+		auto table = tableManager->getTable(i);
+		if (table != nullptr)
+		{
+			if (autoData.lowerRange == 0) autoData.lowerRange = i;
+			autoData.upperRange = i;
+		}
+	}
+	autoData.lastNote = autoData.lowerRange;
 }
 
 void Processor::noteOn(double timeStamp, unsigned char ch, unsigned char note, unsigned char vel)
@@ -38,6 +51,13 @@ void Processor::midiEvent(double timeStamp, std::vector<unsigned char>* message)
 
 void Processor::process(const AudioIO::CallbackConfig & cfg, AudioIO::CallbackData * data)
 {
+	if (doAuto)
+	{
+		float ms = 1000. * (cfg.frameSize * cfg.iSampleRate);
+		playAuto(ms);
+	}
+
+
 	for (int c = 0; c < cfg.outChannels; c++)
 	{
 		for (int i = 0; i < cfg.frameSize; i++)
@@ -62,10 +82,41 @@ void Processor::process(const AudioIO::CallbackConfig & cfg, AudioIO::CallbackDa
 
 }
 
+
+
 void Processor::prepare(const AudioIO::CallbackConfig & cfg)
 {
 	for (auto &voice : voices)
 	{
 		voice->prepare(cfg);
+	}
+}
+
+
+void Processor::playAuto(float msIncrement)
+{
+	autoData.timerMS += msIncrement;
+	if (autoData.timerMS > autoData.intervalMS)
+	{
+		autoData.timerMS -= autoData.intervalMS;
+
+		if (autoData.lastNote > 0) noteOff(0, 0, autoData.lastNote);
+		autoData.curStep++;
+		if (autoData.curStep > 2) autoData.curStep = 0;
+		static const unsigned int offsets[] = { 4, 3, 5};
+		auto interval = offsets[autoData.curStep];
+
+		auto note = autoData.lastNote += interval;
+
+		if (note > autoData.upperRange)
+		{
+			note = autoData.lowerRange;
+			autoData.curStep = 0;
+		}
+				
+		
+		autoData.lastNote = note;
+
+		noteOn(0, 0, autoData.lastNote, 127);
 	}
 }
