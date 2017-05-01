@@ -411,6 +411,11 @@ void TableManager::limitNumActiveBins(unsigned int num)
 	}
 }
 
+void TableManager::unlimitNumActiveBins()
+{
+	for (auto table : tables) if (table != nullptr) table->refreshActiveBins();
+}
+
 TableManager::ErrorCode TableManager::sanity()
 {
 	int numBins   = -1;

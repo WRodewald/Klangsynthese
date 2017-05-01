@@ -56,6 +56,7 @@ public:
 
 	void applyThreshold(float val);
 	void limitNumActiveBins(unsigned int num);
+	void unlimitNumActiveBins();
 
 	ErrorCode sanity();
 

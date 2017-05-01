@@ -165,8 +165,11 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (limit > 0) tableManager.limitNumActiveBins(limit);
 
+	if (limit > 0)
+		tableManager.limitNumActiveBins(limit);
+	else
+		tableManager.unlimitNumActiveBins();
 
 	std::cout << "Table Manager Initialized" << std::endl;
 
